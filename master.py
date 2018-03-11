@@ -1,5 +1,4 @@
 import rpyc
-import json
 import random
 import numpy as np
 import time
@@ -27,9 +26,9 @@ class Master(rpyc.Service):
           random.randint(1, MAX_FILTER_COUNT)
         ], 
         "filter_sizes": [
-          np.repeat(random.randint(1, MAX_FILTER_COUNT), 2),
-          np.repeat(random.randint(1, MAX_FILTER_COUNT), 2),
-          np.repeat(random.randint(1, MAX_FILTER_COUNT), 2)
+          np.repeat(random.randint(1, MAX_FILTER_SIZE), 2).tolist(),
+          np.repeat(random.randint(1, MAX_FILTER_SIZE), 2).tolist(),
+          np.repeat(random.randint(1, MAX_FILTER_SIZE), 2).tolist()
         ]
       }
       print("Offering options {}...".format(options))
@@ -38,14 +37,16 @@ class Master(rpyc.Service):
     def exposed_put_training_results(self, options, results):
       # Writes training results to file
       print("Received results {} for options {}...".format(results, options))
-      f = open(RESULTS_FILE_PATH, "w+")
-      f.write(json.dumps({
+      f = open(RESULTS_FILE_PATH, "a")
+      line = str({
         "options": options,
         "results": results
-      }))
+      })
+      f.write("{}\n".format(line))
+      f.flush()
       f.close()
 
 if __name__ == "__main__":
-  t = ThreadedServer(Master, port=PORT, protocol_config={"allow_public_attrs" : True})
+  t = ThreadedServer(Master, port=PORT, protocol_config={"allow_all_attrs" : True})
   print("Running the master process on port {}...".format(PORT))
   t.start()

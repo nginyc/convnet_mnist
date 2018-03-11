@@ -6,7 +6,7 @@ import tensorflow as tf
 tf.logging.set_verbosity(tf.logging.INFO)
 
 CNN_LAYERS_COUNT=3
-STEPS=100
+STEPS=10
 MASTER_PORT=18861
 
 def cnn_model_fn(
@@ -87,7 +87,7 @@ class Worker():
       options_prev = None
 
       print("Connecting to master on port {}...".format(MASTER_PORT))
-      connection = rpyc.connect("localhost", MASTER_PORT)
+      connection = rpyc.connect("localhost", MASTER_PORT, config={"allow_all_attrs": True})
       master = connection.root
 
       while True:
@@ -96,11 +96,6 @@ class Worker():
           master.put_training_results(options_prev, results_prev)
 
         options_prev = master.get_training_options()
-        options_prev = {
-          "model_dir": options_prev["model_dir"],
-          "filters_counts": options_prev["filters_counts"],
-          "filter_sizes": options_prev["filter_sizes"]
-        }
         print("Received options from master: {}".format(options_prev))
         
         results_prev = self.train(options_prev)
@@ -109,7 +104,6 @@ class Worker():
       connection.close()
           
     def train(self, options):
-      
       # Load training and eval data
       mnist = tf.contrib.learn.datasets.load_dataset("mnist")
       train_data = mnist.train.images
@@ -136,7 +130,7 @@ class Worker():
       }
       logging_hook = tf.train.LoggingTensorHook(
         tensors=tensors_to_log,
-        every_n_iter=10
+        every_n_iter=100
       )
 
       # Train the model
